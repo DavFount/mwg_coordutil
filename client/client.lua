@@ -1,3 +1,9 @@
+local VORPcore = {}
+
+TriggerEvent("getCore", function(core)
+    VORPcore = core
+end)
+
 local GatheredCoords = {
     ambarino = {},
     upper_west_elizabeth = {},
@@ -10,10 +16,21 @@ local GatheredCoords = {
     guarma = {}
 }
 
+local Key = Config.Key
 local isCoordsGathered = false
 local totalCount = 0
 
-RegisterCommand("getcoord", function(source, args, rawCommand)
+Citizen.CreateThread(function()
+    while true do
+        if IsControlJustPressed(0, Key) then
+            print('Key detected')
+            GetCoord()
+        end
+        Citizen.Wait(10)
+    end
+end)
+
+function GetCoord()
     local player = PlayerPedId()
     local x, y, z = table.unpack(GetEntityCoords(player))
 
@@ -24,16 +41,17 @@ RegisterCommand("getcoord", function(source, args, rawCommand)
     local written_hash = Citizen.InvokeNative(0x43AD8FC02B429D33, x, y, z, 13)
 
     local state_name = ""
+    local value = ""
 
     if state_hash then
         state_name = Config.ZoneData.states[state_hash].state
-        print('Found State')
+        value = 'State'
     elseif district_hash then
         state_name = Config.ZoneData.districts[district_hash].state
-        print('Found Distrcit')
+        value = 'Distrcit'
     elseif town_hash then
         state_name = Config.ZoneData.towns[town_hash].state
-        print('Found Town')
+        value = 'Town'
     else
         state_name = "Unable to find state by district or town."
         print(string.format("Town: %s"), town_hash)
@@ -51,11 +69,12 @@ RegisterCommand("getcoord", function(source, args, rawCommand)
     }
 
     table.insert(GatheredCoords[state_name], coords)
-    print(string.format("Adding Coord: x: %s y: %s z: %s", x, y, z))
+    local msg = string.format("Coord Saved for region %s.", state_name)
+    VORPcore.NotifyRightTip(msg, 4000)
 
     totalCount = totalCount + 1
     isCoordsGathered = true
-end)
+end
 
 RegisterCommand("export_coords", function(source, args, rawCommand)
     if isCoordsGathered then

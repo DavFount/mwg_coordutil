@@ -1,4 +1,5 @@
 Config = {
+    Key = 0x446258B6,
 
     ZoneData = {
         states = {
